@@ -3,9 +3,12 @@ import org.springframework.jmx.export.MBeanExporter
 import org.hibernate.jmx.StatisticsService
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils as GCU
+import org.apache.log4j.jmx.HierarchyDynamicMBean
+import org.apache.log4j.Logger
+
 
 class JmxGrailsPlugin {
-    def version = 0.2
+    def version = 0.3
     def dependsOn = [:]
 
    
@@ -14,9 +17,6 @@ class JmxGrailsPlugin {
     def title = "The JMX Grails Plugin"
     def description = '''\
 Adds JMX supporrt to any Grails application.
-TODO: jmx services (similar to Gwt remoting of service)
-TODO: jmx controllers with: static exposed = ['jmx:ObjectName']
-TODO: jmx jetty
 
 '''
 
@@ -36,6 +36,10 @@ TODO: jmx jetty
 		    sessionFactory = ref("sessionFactory")
 	    }
 
+        log4j(HierarchyDynamicMBean) {
+            
+        }
+
         // configure the expo
         exporter(MBeanExporter) {
              server = ref(mbeanServer)
@@ -48,7 +52,6 @@ TODO: jmx jetty
 
         // TODO expose all of jetty
         // TODO add a bean to spring on the fly
-        // TODO add a logging wrapper
 
         def configDomain = "GrailsConfig"
         def appDomain = "GrailsApp"
@@ -56,9 +59,19 @@ TODO: jmx jetty
         MBeanExporter exporter = ctx.getBean("exporter")
         exportConfigBeans(exporter, ctx, configDomain)
 
+        exportLogger(ctx, exporter, configDomain)
+
         exportServices(application, exporter, appDomain)
 
         exportMBeans(exporter)
+
+    }
+
+    private def exportLogger(ctx, MBeanExporter exporter, configDomain) {
+
+        HierarchyDynamicMBean logMBean = ctx.getBean("log4j")
+        exporter.beans."${configDomain}:service=log4j" = ctx.log4j
+        logMBean.addLoggerMBean(Logger.getRootLogger().getName())
 
     }
 
@@ -93,6 +106,7 @@ TODO: jmx jetty
     private def exportConfigBeans(MBeanExporter exporter, ctx, configDomain) {
         exporter.beans."${configDomain}:service=statistics,type=hibernate" = ctx.hibernateStats
         exporter.beans."${configDomain}:service=datasource" = ctx.dataSource
+
     }
 
     def doWithWebDescriptor = { xml ->
