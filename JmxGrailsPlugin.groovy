@@ -16,12 +16,12 @@ class JmxGrailsPlugin {
     def authorEmail = "kensipe@gmail.com"
     def title = "The JMX Grails Plugin"
     def description = '''\
-Adds JMX supporrt to any Grails application.
-
+Adds JMX support to any Grails application.
+Provides ability to expose any service as an MBean
 '''
 
     // URL to the plugin's documentation
-    def documentation = "http://grails.org/JmxGrailsPlugin+Plugin"
+    def documentation = "http://grails.org/Jmx+Plugin"
 
     def doWithSpring = {
 
@@ -51,19 +51,19 @@ Adds JMX supporrt to any Grails application.
     def doWithApplicationContext = { ctx ->
 
         // TODO expose all of jetty
-        // TODO add a bean to spring on the fly
 
         def configDomain = "GrailsConfig"
         def appDomain = "GrailsApp"
 
         MBeanExporter exporter = ctx.getBean("exporter")
+
+        // exporting mbeans
         exportConfigBeans(exporter, ctx, configDomain)
-
         exportLogger(ctx, exporter, configDomain)
-
         exportServices(application, exporter, appDomain)
 
-        exportMBeans(exporter)
+        //
+        registerMBeans(exporter)
 
     }
 
@@ -98,7 +98,7 @@ Adds JMX supporrt to any Grails application.
       }
     }
 
-    private def exportMBeans(MBeanExporter exporter) {
+    private def registerMBeans(MBeanExporter exporter) {
         exporter.unregisterBeans()
         exporter.registerBeans()
     }
