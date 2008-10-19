@@ -46,31 +46,43 @@ TODO: jmx jetty
    
     def doWithApplicationContext = { ctx ->
 
+        // TODO expose all of jetty
         // TODO add a bean to spring on the fly
         // TODO add a logging wrapper
-        // TODO allow for static expose = ['jmx:ObjectName']
 
         def configDomain = "GrailsConfig"
         def appDomain = "GrailsApp"
-        println "****************** do with app ctx ****************"
 
         MBeanExporter exporter = ctx.getBean("exporter")
         exportConfigBeans(exporter, ctx, configDomain)
 
- 
-        application.serviceClasses?.each { service ->
-          def serviceClass = service.getClazz()
-          def serviceName = service.shortName
-
-          def exposeList = GCU.getStaticPropertyValue(serviceClass, 'expose')
-          if (exposeList != null && exposeList.contains('jmx')) {
-               // perhaps these should be limited to singletons
-              exporter.beans."${appDomain}:service=${serviceName}" = service
-          }
-        }
+        exportServices(application, exporter, appDomain)
 
         exportMBeans(exporter)
 
+    }
+
+    private def exportServices(application, MBeanExporter exporter, appDomain) {
+      application.serviceClasses?.each {service ->
+        def serviceClass = service.getClazz()
+        def serviceName = service.shortName
+        def objectName = "service=${serviceName}"
+
+        def exposeList = GCU.getStaticPropertyValue(serviceClass, 'expose')
+
+        def gwtExposed = exposeList?.find { it.startsWith('jmx') }
+        if (gwtExposed) {
+            // change service name if provided by jmx:objectname
+            def m = gwtExposed =~ 'jmx:(.*)'
+            if(m) {
+                objectName = "${m[0][1]}"
+            // TODO need to check for malformed objectnames and fall back to standard service name
+            }
+            //perhaps these should be limited to singletons
+            exporter.beans."${appDomain}:${objectName}" = service
+        }
+
+      }
     }
 
     private def exportMBeans(MBeanExporter exporter) {
