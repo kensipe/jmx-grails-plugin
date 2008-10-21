@@ -60,7 +60,7 @@ Provides ability to expose any service as an MBean
         // exporting mbeans
         exportConfigBeans(exporter, ctx, configDomain)
         exportLogger(ctx, exporter, configDomain)
-        exportServices(application, exporter, appDomain)
+        exportServices(application, exporter, appDomain, ctx)
 
         //
         registerMBeans(exporter)
@@ -75,7 +75,7 @@ Provides ability to expose any service as an MBean
 
     }
 
-    private def exportServices(application, MBeanExporter exporter, appDomain) {
+    private def exportServices(application, MBeanExporter exporter, appDomain, ctx) {
       application.serviceClasses?.each {service ->
         def serviceClass = service.getClazz()
         def serviceName = service.shortName
@@ -92,8 +92,13 @@ Provides ability to expose any service as an MBean
             // TODO need to check for malformed objectnames and fall back to standard service name
             }
             //perhaps these should be limited to singletons
-            exporter.beans."${appDomain}:${objectName}" = service
+            exporter.beans."${appDomain}:${objectName}" =  ctx.getBean(service.getPropertyName())
         }
+
+          // TODO 1. Remove the groovy exposure to jmx... just publicly declared methods of service or service interface
+                    // need to think about this one... but perhaps rewritting the reflection calls would do it ???
+                    // or writing a class on the fly 
+          // TODO 2. Add ability to add meta data... perhaps through an MBeanInfo Assembler
 
       }
     }
@@ -124,4 +129,19 @@ Provides ability to expose any service as an MBean
     def onConfigChange = { event ->
 
     }
+
+// TODO I would definitely like to constraint the jmx exposed interfaces with something like
+// look at gwt...
+// 
+
+// Iterate through the methods declared by the Grails service,
+// adding the appropriate ones to the interface definitions.
+/*serviceWrapper.clazz.declaredMethods.each { Method method ->
+    // Skip non-public, static, Groovy, and property methods.
+    if (!Modifier.isPublic(method.modifiers) ||
+            Modifier.isStatic(method.modifiers) ||
+            GROOVY_METHODS.contains(method.name) ||
+            propMethods.contains(method)) {
+        return
+    }*/
 }
