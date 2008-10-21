@@ -8,7 +8,7 @@ import org.apache.log4j.Logger
 
 
 class JmxGrailsPlugin {
-    def version = 0.3
+    def version = 0.4
     def dependsOn = [:]
 
    
